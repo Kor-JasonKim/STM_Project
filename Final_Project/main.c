@@ -145,6 +145,6 @@ void Main(void) {
         }
 
         // 시스템 안정화 딜레이
-        Delay_ms(100); 
+        //Delay_ms(100); 
     }
 }

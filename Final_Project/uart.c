@@ -72,9 +72,13 @@ void Uart1_Init(int baud)
   frac &= 0xf;
   USART1->BRR = (mant<<4)|(frac<<0);
 
-  USART1->CR1 = (1<<13)|(0<<12)|(0<<10)|(1<<3)|(1<<2);
-  USART1->CR2 = 0 << 12;
-  USART1->CR3 = 0;
+  // [수정] 5번 비트(RXNEIE)를 1로 세팅하여 글자가 오면 CPU를 찌르도록(인터럽트) 설정합니다.
+    USART1->CR1 = (1<<13) | (1<<5) | (0<<12) | (0<<10) | (1<<3) | (1<<2);
+    USART1->CR2 = 0 << 12;
+    USART1->CR3 = 0;
+
+    // [추가] NVIC(시스템 인터럽트 컨트롤러)에서 USART1(37번)의 인터럽트를 허용해 줍니다.
+    NVIC->ISER[1] |= (1 << 5);
 }
 
 void Uart1_Send_Byte(char data)
@@ -151,7 +155,54 @@ int rx_index = 0;
 
 void Process_UART_Input(void) 
 {
-    // [수정] USART2 -> USART1 로 모두 변경
+    // // [수정] USART2 -> USART1 로 모두 변경
+    // if (USART1->SR & (1 << 5)) { 
+    //     char ch = (char)(USART1->DR & 0xFF); 
+        
+    //     if (ch == '\r' || ch == '\n') {
+    //         rx_buffer[rx_index] = '\0'; 
+            
+    //         if (rx_index > 0) {
+    //             int h, m, s;
+                
+    //             // 1. 시간 동기화 (T)
+    //             if (rx_buffer[0] == 'T' || rx_buffer[0] == 't') {
+    //                 if (sscanf(rx_buffer + 1, " %d:%d:%d", &h, &m, &s) == 3) {
+    //                     Set_Current_Time(h, m, s);
+    //                     // [수정] PC 터미널과 앱에 각각 따로 알려줍니다.
+    //                     printf("\r\n[SYNC] Current Time Synced -> %02d:%02d:%02d\r\n", h, m, s);
+    //                     Uart1_Printf("T:%02d:%02d:%02d\n", h, m, s); // 앱으로 전송
+    //                 }
+    //             }
+    //             // 2. 알람 설정 (A)
+    //             else if (rx_buffer[0] == 'A' || rx_buffer[0] == 'a') {
+    //                 if (sscanf(rx_buffer + 1, " %d:%d:%d", &h, &m, &s) == 3) {
+    //                     RTC->WPR = 0xCA; RTC->WPR = 0x53;
+    //                     RTC->CR &= ~(1 << 8); 
+    //                     while(!(RTC->ISR & (1 << 0))); 
+                        
+    //                     RTC->ALRMAR = (1 << 31) | (TO_BCD(h) << 16) | (TO_BCD(m) << 8) | TO_BCD(s);
+                        
+    //                     RTC->CR |= (1 << 8); 
+    //                     RTC->WPR = 0xFF;     
+                        
+    //                     // [수정] 설정된 알람 시간을 앱으로 바로 피드백 전송
+    //                     printf("\r\n[SET] Alarm Updated -> %02d:%02d:%02d\r\n", h, m, s);
+    //                     Uart1_Printf("A:%02d:%02d:%02d\n", h, m, s); // 앱으로 전송
+    //                 }
+    //             } else {
+    //                 printf("\r\n[ERROR] Invalid Command\r\n");
+    //             }
+    //         }
+    //         rx_index = 0; 
+    //     } else if (rx_index < 19) {
+    //         rx_buffer[rx_index++] = ch;
+    //     }
+    // }
+}
+
+void USART1_IRQHandler(void) 
+{
     if (USART1->SR & (1 << 5)) { 
         char ch = (char)(USART1->DR & 0xFF); 
         
@@ -165,9 +216,8 @@ void Process_UART_Input(void)
                 if (rx_buffer[0] == 'T' || rx_buffer[0] == 't') {
                     if (sscanf(rx_buffer + 1, " %d:%d:%d", &h, &m, &s) == 3) {
                         Set_Current_Time(h, m, s);
-                        // [수정] PC 터미널과 앱에 각각 따로 알려줍니다.
                         printf("\r\n[SYNC] Current Time Synced -> %02d:%02d:%02d\r\n", h, m, s);
-                        Uart1_Printf("T:%02d:%02d:%02d\n", h, m, s); // 앱으로 전송
+                        Uart1_Printf("T:%02d:%02d:%02d\n", h, m, s); 
                     }
                 }
                 // 2. 알람 설정 (A)
@@ -182,12 +232,9 @@ void Process_UART_Input(void)
                         RTC->CR |= (1 << 8); 
                         RTC->WPR = 0xFF;     
                         
-                        // [수정] 설정된 알람 시간을 앱으로 바로 피드백 전송
                         printf("\r\n[SET] Alarm Updated -> %02d:%02d:%02d\r\n", h, m, s);
-                        Uart1_Printf("A:%02d:%02d:%02d\n", h, m, s); // 앱으로 전송
+                        Uart1_Printf("A:%02d:%02d:%02d\n", h, m, s); 
                     }
-                } else {
-                    printf("\r\n[ERROR] Invalid Command\r\n");
                 }
             }
             rx_index = 0; 
