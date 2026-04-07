@@ -49,14 +49,14 @@ void Servo_Open_Close(void)
 {
     // 1. 90도로 이동 (보통 1.5ms 펄스 = CCR값 1500)
     // 서보 모델마다 차이가 있을 수 있으니 1500~2000 사이에서 조절하세요.
-    TIM3->CCR1 = 1500; 
+    TIM3->CCR1 = 800; 
     printf("[SERVO] Lid Opening (90 deg)...\r\n");
 
     // 2. 2초간 상태 유지
     TIM2_Delay(2000);
 
     // 3. 다시 원래 자리(0도)로 복귀 (보통 0.5ms 펄스 = CCR값 500)
-    TIM3->CCR1 = 500; 
+    TIM3->CCR1 = 2000; 
     printf("[SERVO] Lid Closing (0 deg)...\r\n");
     
     // 복귀할 시간 여유를 조금 줍니다.
@@ -90,12 +90,12 @@ void Stepper_Step(int step_num) {
 void Rotate_Next_Slot(void) {
     static int current_step = 0; 
 
-    for(int i = 0; i < 293; i++) {
+    for(int i = 0; i < 2282; i++) {
         Stepper_Step(current_step);
         current_step++;
 
         // 한 스텝마다 2ms 대기
-        TIM2_Delay(10); 
+        TIM2_Delay(5); 
     }
     
     // 회전 완료 후 대기 상태일 때 모터 발열 방지 (전류 차단)
