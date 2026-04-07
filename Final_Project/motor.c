@@ -6,15 +6,27 @@
 // =========================================================
 void Motor_Init(void)
 {
-    // --- 1. 기존 DC 모터 제어 핀 설정 (PA0, PA1 -> TIM2 PWM) ---
-    Macro_Write_Block(GPIOA->MODER, 0x3, 2, 0); 
-    Macro_Write_Block(GPIOA->MODER, 0x3, 2, 2); 
-    Macro_Clear_Bit(GPIOA->OTYPER, 0); 
-    Macro_Clear_Bit(GPIOA->OTYPER, 1); 
-    Macro_Write_Block(GPIOA->OSPEEDR, 0x3, 3, 0); 
-    Macro_Write_Block(GPIOA->OSPEEDR, 0x3, 3, 2); 
-    Macro_Write_Block(GPIOA->AFR[0], 0xF, 1, 0); 
-    Macro_Write_Block(GPIOA->AFR[0], 0xF, 1, 4); 
+    // --- 1. 수정된 DC 모터 제어 핀 설정 (PA0, PA1 -> TIM5 PWM) ---
+    Macro_Set_Bit(RCC->APB1ENR, 3); // TIM5 클럭 ON
+    
+    Macro_Write_Block(GPIOA->MODER, 0xF, 0xA, 0);       // PA0, PA1 => Alternate Function
+    Macro_Write_Block(GPIOA->AFR[0], 0xFF, 0x22, 0);    // PA0, PA1 => AF2 (TIM5) 연결
+    
+    Macro_Clear_Bit(GPIOA->OTYPER, 0);
+    Macro_Clear_Bit(GPIOA->OTYPER, 1);
+    
+    TIM5->PSC = 95;      // 96MHz 기준 약 1kHz 주파수 생성
+    TIM5->ARR = 999;     
+    
+    // TIM5 CH1, CH2 PWM 모드 설정
+    TIM5->CCMR1 = (0x6 << 4) | (1 << 3) | (0x6 << 12) | (1 << 11);
+    TIM5->CCER = (1 << 0) | (1 << 4); 
+    
+    TIM5->CCR1 = 0;
+    TIM5->CCR2 = 0;
+    
+    TIM5->EGR |= 1;
+    TIM5->CR1 |= 1; // TIM5 시작
 
     // --- 2. [추가] 서보 모터 설정 (PA6 -> TIM3_CH1) ---
     Macro_Set_Bit(RCC->APB1ENR, 1);    // TIM3 클럭 활성화
@@ -102,27 +114,82 @@ void Rotate_Next_Slot(void) {
     GPIOC->ODR &= ~(0xF << 0); 
 }
 
-void Motor_Stop(void)
+// =========================================================
+// [3] DC 모터 구동 로직
+// =========================================================
+#define TIM5_FREQ_LOCAL (8000000U)
+
+#define MOTOR_STOP   0
+#define MOTOR_CW     1
+#define MOTOR_CCW   -1
+static unsigned int Motor_Percent = 75;   // 50 ~ 100%
+static int Motor_Dir = MOTOR_STOP;  
+
+void Motor_Set_Percent(unsigned int percent)
 {
-    TIM2->CCR1 = 0;
-    TIM2->CCR2 = 0;
+   if(percent < 50) percent = 50;
+   if(percent > 100) percent = 100;
+
+   Motor_Percent = percent;
 }
 
-void Motor_Clockwise(unsigned int duty)
+unsigned int Motor_Get_Percent(void)
 {
-    Motor_Stop();
-    for(volatile int i = 0; i < 0x5000; i++);
-
-    TIM2->CCR1 = duty;
-    TIM2->CCR2 = 0;
+   return Motor_Percent;
 }
 
-void Motor_CounterClockwise(unsigned int duty)
+int Motor_Get_Dir(void)
 {
-    Motor_Stop();
-    for(volatile int i = 0; i < 0x5000; i++);
+   return Motor_Dir;
+}
 
-    TIM2->CCR1 = 0;
-    TIM2->CCR2 = duty;
+void Motor_Apply_Duty(void)
+{
+   unsigned int duty;
+
+   duty = (unsigned int)(((unsigned long)(TIM5->ARR + 1) * Motor_Percent) / 100);
+
+   if(Motor_Dir == MOTOR_CW)
+   {
+      TIM5->CCR2 = 0;
+      TIM5->CCR1 = duty;
+   }
+   else if(Motor_Dir == MOTOR_CCW)
+   {
+      TIM5->CCR1 = 0;
+      TIM5->CCR2 = duty;
+   }
+   else
+   {
+      TIM5->CCR1 = 0;
+      TIM5->CCR2 = 0;
+   }
+}
+
+void Stop(void)
+{
+   TIM5->CCR1 = 0;
+   TIM5->CCR2 = 0;
+   Motor_Dir = MOTOR_STOP;
+}
+
+void Move_CW(void)
+{
+   TIM5->CCR2 = 0;
+
+   for(volatile int i = 0; i < 100; i++);
+
+   Motor_Dir = MOTOR_CW;
+   Motor_Apply_Duty();
+}
+
+void Move_CCW(void)
+{
+   TIM5->CCR1 = 0;
+
+   for(volatile int i = 0; i < 100; i++);
+
+   Motor_Dir = MOTOR_CCW;
+   Motor_Apply_Duty();
 }
 

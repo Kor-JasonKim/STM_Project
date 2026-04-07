@@ -196,3 +196,15 @@ void Process_UART_Input(void)
         }
     }
 }
+
+char Uart2_Get_Pressed(void)
+{
+    if(Macro_Check_Bit_Set(USART2->SR, 5))
+    {
+        return (char)USART2->DR;
+    }
+    else
+    {
+        return (char)0;
+    }
+}

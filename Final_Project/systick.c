@@ -27,3 +27,24 @@ void SysTick_Stop(void)
 {
 	SysTick->CTRL = 0<<0;
 }
+
+void Delay_ms(unsigned int msec)
+{
+    // 한 번에 처리 가능한 최대 시간이 약 1.3초이므로, 
+    // 500ms씩 나누어서 반복 실행합니다.
+    while(msec > 500)
+    {
+        SysTick_Run(500);
+        while(!SysTick_Check_Timeout());
+        msec -= 500;
+    }
+    
+    // 남은 시간 처리
+    if(msec > 0)
+    {
+        SysTick_Run(msec);
+        while(!SysTick_Check_Timeout());
+    }
+    
+    SysTick_Stop();
+}

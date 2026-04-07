@@ -17,6 +17,8 @@ extern char Uart1_Get_Pressed(void);
 extern void Uart2_Send_String(char *pt);
 extern void Uart2_Printf(char *fmt,...);
 extern void Process_UART_Input(void);
+extern void Uart2_Get_Pressed(void);
+
 
 // SysTick.c
 
@@ -25,6 +27,7 @@ extern int SysTick_Check_Timeout(void);
 extern unsigned int SysTick_Get_Time(void);
 extern unsigned int SysTick_Get_Load_Time(void);
 extern void SysTick_Stop(void);
+extern void Delay_ms(unsigned int msec);
 
 // Led.c
 
@@ -60,12 +63,15 @@ extern void TIM2_Init(void);
 
 // motor.c
 extern void Motor_Init(void);
-extern void Motor_Stop(void);
-extern void Motor_Clockwise(unsigned int);
-extern void Motor_CounterClockwise(unsigned int);
+extern void Stop(void);
+extern void Move_CW(void);
+extern void Move_CCW(void);
 extern void Rotate_Next_Slot(void);
 extern void Stepper_Step(int);
 extern void Servo_Open_Close(void);
+extern void Motor_Set_Percent(unsigned int percent);
+extern unsigned int Motor_Get_Percent(void);
+extern int Motor_Get_Dir(void);
 
 // adc.c
 extern void ADC1_IN6_Init(void);
@@ -88,3 +94,12 @@ extern void LCD_Data(char);
 extern void LCD_Init(void);
 extern void LCD_Set_Cursor(int, int);
 extern void LCD_String(char *);
+
+// buzzer.c
+extern void Buzzer_Init(void);
+extern void Buzzer_On(void);
+extern void Buzzer_Off(void);
+
+// utrasonic.c
+extern void Ultrasonic_Init(void);
+extern int Ultrasonic_Get_Distance(void);
