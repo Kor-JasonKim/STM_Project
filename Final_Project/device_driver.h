@@ -17,7 +17,7 @@ extern char Uart1_Get_Pressed(void);
 extern void Uart2_Send_String(char *pt);
 extern void Uart2_Printf(char *fmt,...);
 extern void Process_UART_Input(void);
-extern void Uart2_Get_Pressed(void);
+extern char Uart2_Get_Pressed(void);
 
 
 // SysTick.c
