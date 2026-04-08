@@ -3,6 +3,10 @@
 
 #define REST 0
 
+// [추가] LCD 주소 정의
+#define LCD1_ADDR 0x4E
+#define LCD2_ADDR 0x4C
+
 #define STATE_IDLE      0
 #define STATE_FORWARD   1
 #define STATE_WAIT      2
@@ -27,7 +31,8 @@ static void Sys_Init(void)
     LED_Init();
     Status_LED_Init(); // [추가] 외부 상태 표시 LED 6개 초기화
     Motor_Init();
-    LCD_Init();
+    LCD_Init();               // [유지] 기존 LCD(0x4E) 초기화
+    LCD_Init_To(LCD2_ADDR);   // [추가] 두 번째 LCD(0x4C) 초기화
     Ultrasonic_Init();
     Key_Poll_Init();
 
@@ -35,6 +40,7 @@ static void Sys_Init(void)
     Buzzer_Init();
 }
 
+ 
 void Main(void)
 {
     Sys_Init();
@@ -46,7 +52,7 @@ void Main(void)
 
     printf("=== Integrated Pill Dispenser System Ready ===\r\n");
     printf("Waiting for Alarm or Press 'f' for manual test.\r\n");
-    printf("Passive Buzzer : PB0 (TIM3_CH3)\r\n");
+    printf("Passive Buzzer : PB6 (TIM4_CH1)\r\n");
     
     // 시작할 때 모든 외부 LED 끄기
     Status_LED_All_Off();
@@ -106,7 +112,7 @@ void Main(void)
 
                 // [추가] 컨베이어 이동 시작: 노란색 LED ON!
                 Status_LED_Yellow();                
-                Motor_Set_Percent(37);
+                Motor_Set_Percent(50);
                 Move_CW();
                 current_state = STATE_FORWARD;
             }
@@ -130,7 +136,7 @@ void Main(void)
                     printf("[1/4] Manual Start. Moving Forward...\n");
                     // [추가] 컨베이어 전진 시작: 노란색 LED ON!
                     Status_LED_Yellow();
-                    Motor_Set_Percent(37);
+                    Motor_Set_Percent(50);
                     Move_CW();
                     current_state = STATE_FORWARD;
                 }
@@ -163,7 +169,7 @@ void Main(void)
                     // [추가] 역회전 복귀 시작: 초록색 LED ON!
                     Status_LED_Green();
 
-                    Motor_Set_Percent(37);
+                    Motor_Set_Percent(50);
                     Move_CCW();
 
                     Key_Wait_Key_Released();
@@ -187,6 +193,7 @@ void Main(void)
                 break;
         }
 
+        LCD2_Show_State(current_state, dist); // [수정] 상태값을 인자로 넘겨서 LCD2 표시
         Delay_ms(100);
     }
 }
