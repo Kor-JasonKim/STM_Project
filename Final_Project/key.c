@@ -2,51 +2,38 @@
 
 void Key_Poll_Init(void)
 {
-	Macro_Set_Bit(RCC->AHB1ENR, 2); 
-	Macro_Write_Block(GPIOC->MODER, 0x3, 0x0, 26);
+    // [수정] GPIOB 클럭 활성화
+    Macro_Set_Bit(RCC->AHB1ENR, 1);
+
+    // [수정] PB5를 입력 모드(00)로 설정
+    // PB5의 MODER 비트 위치는 5 * 2 = 10
+    Macro_Write_Block(GPIOB->MODER, 0x3, 0x0, 10);
+
+    // [추가] PB5 내부 Pull-up 설정(01)
+    // 평소에는 1, 스위치를 누르면 GND로 떨어져 0이 됨
+    Macro_Write_Block(GPIOB->PUPDR, 0x3, 0x1, 10);
 }
 
 int Key_Get_Pressed(void)
 {
-	return Macro_Check_Bit_Clear(GPIOC->IDR, 13);	
+    // [수정] 외부 스위치는 active-low 방식
+    // 눌렀을 때 PB5 = 0 이므로 bit clear를 검사
+    return Macro_Check_Bit_Clear(GPIOB->IDR, 5);
 }
 
 void Key_Wait_Key_Pressed(void)
 {
-	while(!Macro_Check_Bit_Clear(GPIOC->IDR, 13));
+    while(!Macro_Check_Bit_Clear(GPIOB->IDR, 5));
 }
 
 void Key_Wait_Key_Released(void)
 {
-	while(!Macro_Check_Bit_Set(GPIOC->IDR, 13));
+    while(!Macro_Check_Bit_Set(GPIOB->IDR, 5));
 }
 
 void Key_ISR_Enable(int en)
 {
-	if(en)
-	{
-		Macro_Set_Bit(RCC->AHB1ENR, 2); 
-		Macro_Write_Block(GPIOC->MODER, 0x3, 0x0, 26);
-
-		// SYSCFG 장치 Clock On
-		Macro_Set_Bit(RCC->APB2ENR, 14);
-		// PC13을 EXTI 13의 소스가 되도록 설정
-		Macro_Write_Block(SYSCFG->EXTICR[3], 0xF, 0x2, 4);
-		// EXTI 13을 Falling Edge Trigger로 설정
-		Macro_Set_Bit(EXTI->FTSR, 13);
-		// EXTI 13 Pending Clear
-		EXTI->PR = 0x1<<13;
-		// Macro_Set_Bit(EXTI->PR, 13);			 	Pending Clear는 매크로를 사용해선 안되며 직접적인 대입만을 해야한다, 다른 Interrupt를 덮어 씌울 수도 있다
-		// NVIC EXTI15_9 Interrupt Pending Clear
-		NVIC_ClearPendingIRQ((IRQn_Type)40);
-		// EXTI 13 Interrupt Enable
-		Macro_Set_Bit(EXTI->IMR, 13);
-		// NVIC EXTI15_9 Interrupt Enable
-		NVIC_EnableIRQ((IRQn_Type)40);
-	}
-
-	else
-	{
-		NVIC_DisableIRQ((IRQn_Type)40);
-	}
+    // 현재 프로젝트는 폴링 방식으로 버튼을 처리하므로
+    // 외부 스위치도 인터럽트 없이 사용합니다.
+    (void)en;
 }
