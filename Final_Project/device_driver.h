@@ -72,6 +72,8 @@ extern void Servo_Open_Close(void);
 extern void Motor_Set_Percent(unsigned int percent);
 extern unsigned int Motor_Get_Percent(void);
 extern int Motor_Get_Dir(void);
+extern void Stepper2_Step(int);
+extern void Supply_Pill(void);
 
 // adc.c
 extern void ADC1_IN6_Init(void);

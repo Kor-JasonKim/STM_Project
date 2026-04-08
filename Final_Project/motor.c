@@ -57,6 +57,11 @@ void Motor_Init(void)
     RCC->AHB1ENR |= (1 << 2); 
     GPIOC->MODER &= ~(0xFF << 0);
     GPIOC->MODER |=  (0x55 << 0);
+
+    // PC6~PC9 핀(12~19번 비트)의 모드를 초기화(00)
+    GPIOC->MODER &= ~(0xFF << 12); 
+    // PC6~PC9 핀을 일반 출력(01) 모드로 설정
+    GPIOC->MODER |=  (0x55 << 12);
 }
 
 // 서보 모터 작동 함수
@@ -109,7 +114,7 @@ void Stepper_Step(int step_num) {
 void Rotate_Next_Slot(void) {
     static int current_step = 0; 
 
-    for(int i = 0; i < 2282; i++) {
+    for(int i = 0; i < 1141; i++) {
         Stepper_Step(current_step);
         current_step++;
 
@@ -119,6 +124,46 @@ void Rotate_Next_Slot(void) {
     
     // 회전 완료 후 대기 상태일 때 모터 발열 방지 (전류 차단)
     GPIOC->ODR &= ~(0xF << 0); 
+}
+
+// 두 번째 스텝 모터 1스텝 전진
+void Stepper2_Step(int step_num) {
+    unsigned int temp = GPIOC->ODR;
+    
+    // PC6~PC9 비트만 0으로 깔끔하게 지우기 (마스크: 0xF를 6칸 시프트)
+    temp &= ~(0xF << 6); 
+    
+    // 스텝에 맞게 핀(전자석) 켜기 값을 임시로 계산
+    int step_val = 0;
+    switch(step_num % 4) {
+        case 0: step_val = 0x09; break; // 1001
+        case 1: step_val = 0x03; break; // 0011
+        case 2: step_val = 0x06; break; // 0110
+        case 3: step_val = 0x0C; break; // 1100
+    }
+    
+    // 계산된 스텝 값을 PC6~PC9 위치에 맞게 6칸 왼쪽으로 밀어서 삽입
+    temp |= (step_val << 6); 
+    
+    // 레지스터에 최종 적용
+    GPIOC->ODR = temp;
+}
+
+// 두 번째 스텝 모터 회전 함수
+// 사용 예시: Rotate_Stepper2(1141); 
+void Supply_Pill(void) { 
+    static int current_step = 0; 
+
+    for(int i = 0; i < 1141; i++) {
+        Stepper2_Step(current_step);
+        current_step++;
+
+        // 한 스텝마다 대기 (속도 조절 필요시 이 숫자를 변경)
+        TIM2_Delay(5); 
+    }
+    
+    // 회전 완료 후 대기 상태일 때 모터 발열 방지 (전류 차단)
+    GPIOC->ODR &= ~(0xF << 6); 
 }
 
 // =========================================================
