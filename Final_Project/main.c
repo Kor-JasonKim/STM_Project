@@ -16,7 +16,6 @@ int current_state = STATE_IDLE;
 // 부저 상태 디버그용
 volatile int buzzer_state = 0;
 
-// [수정] Sys_Init에서 UART1, UART2, 패시브 부저용 TIM3 출력까지 켭니다.
 static void Sys_Init(void)
 {
     SCB->CPACR |= (0x3 << 10*2) | (0x3 << 11*2);
@@ -26,6 +25,7 @@ static void Sys_Init(void)
     setvbuf(stdout, NULL, _IONBF, 0);
 
     LED_Init();
+    Status_LED_Init(); // [추가] 외부 상태 표시 LED 6개 초기화
     Motor_Init();
     LCD_Init();
     Ultrasonic_Init();
@@ -47,6 +47,9 @@ void Main(void)
     printf("=== Integrated Pill Dispenser System Ready ===\r\n");
     printf("Waiting for Alarm or Press 'f' for manual test.\r\n");
     printf("Passive Buzzer : PB0 (TIM3_CH3)\r\n");
+    
+    // 시작할 때 모든 외부 LED 끄기
+    Status_LED_All_Off();
 
     while(1)
     {
@@ -86,6 +89,9 @@ void Main(void)
         // 3. 알람 발생 시 동작
         if (pill_alarm_flag == 1) {
             printf("\r\n\r\n[ACTION] It's pill time! Rotating...\r\n");
+            // [추가] 약이 배출될 때: 빨간색 LED ON
+            Status_LED_Red();
+
             Rotate_Next_Slot();
             Servo_Open_Close();
             for(volatile int i=0;i<0x100000;i++);
@@ -97,6 +103,9 @@ void Main(void)
 
             if (current_state == STATE_IDLE || current_state == STATE_FINISHED) {
                 printf("[1/4] Pill dropped. Conveyor Auto-Start...\r\n");
+
+                // [추가] 컨베이어 이동 시작: 노란색 LED ON!
+                Status_LED_Yellow();                
                 Motor_Set_Percent(50);
                 Move_CW();
                 current_state = STATE_FORWARD;
@@ -113,10 +122,14 @@ void Main(void)
                 key = Uart2_Get_Pressed();
                 if (key == 'f' || key == 'F') {
                     printf("\n[ACTION] Manual pill drop...\n");
+                    // [추가] 수동 약 배출: 빨간색 LED ON!
+                    Status_LED_Red();
                     Rotate_Next_Slot();
                     Servo_Open_Close();
 
                     printf("[1/4] Manual Start. Moving Forward...\n");
+                    // [추가] 컨베이어 전진 시작: 노란색 LED ON!
+                    Status_LED_Yellow();
                     Motor_Set_Percent(50);
                     Move_CW();
                     current_state = STATE_FORWARD;
@@ -131,6 +144,9 @@ void Main(void)
                     printf("\r\n[DEBUG] dist = %d -> Stop()\r\n", dist);
                     Buzzer_On();
 
+                    // [추가] 도착해서 멈추면 일단 LED off
+                    Status_LED_All_Off();
+
                     printf("[2/4] 1cm detected. Motor stop, passive buzzer ON.\r\n");
                     printf("Press USER button to stop buzzer and reverse.\r\n");
 
@@ -144,6 +160,8 @@ void Main(void)
                     Buzzer_Off();
 
                     printf("[3/4] Button pressed. Buzzer OFF. Reversing...\r\n");
+                    // [추가] 역회전 복귀 시작: 초록색 LED ON!
+                    Status_LED_Green();
 
                     Motor_Set_Percent(50);
                     Move_CCW();
@@ -158,6 +176,10 @@ void Main(void)
                 if (dist >= 15) {
                     Stop();
                     Buzzer_Off();
+
+                    // [추가] 복귀 완료 후 LED 모두 끄기
+                    Status_LED_All_Off();
+
 
                     printf("\r\n[4/4] Reached 15cm. Sequence Finished.\r\n");
                     current_state = STATE_FINISHED;

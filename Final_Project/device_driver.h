@@ -105,3 +105,10 @@ extern void Buzzer_Off(void);
 // utrasonic.c
 extern void Ultrasonic_Init(void);
 extern int Ultrasonic_Get_Distance(void);
+
+// status_led.c
+extern void Status_LED_Init(void);
+extern void Status_LED_All_Off(void);
+extern void Status_LED_Red(void);
+extern void Status_LED_Yellow(void);
+extern void Status_LED_Green(void);
