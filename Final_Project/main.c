@@ -154,7 +154,7 @@ void Main(void)
                     Status_LED_All_Off();
 
                     printf("[2/4] 1cm detected. Motor stop, passive buzzer ON.\r\n");
-                    printf("Press USER button to stop buzzer and reverse.\r\n");
+                    printf("Press external switch(PB5) button to stop buzzer and reverse.\r\n");
 
                     current_state = STATE_WAIT;
                 }
@@ -162,7 +162,7 @@ void Main(void)
 
             case STATE_WAIT:
                 if (Key_Get_Pressed()) {
-                    printf("[DEBUG] USER button pressed\r\n");
+                    printf("[DEBUG] External switch pressed\r\n");
                     Buzzer_Off();
 
                     printf("[3/4] Button pressed. Buzzer OFF. Reversing...\r\n");
