@@ -87,6 +87,16 @@ extern void RTC_Init_And_Alarm_Set(int, int, int);
 extern void Set_Alarm_From_String(char*);
 extern void Set_Current_Time(int, int, int);
 
+// lcd.c
+extern void I2C1_Init(void);
+extern void I2C1_Write_Byte(char);
+extern void LCD_Send(char, int);
+extern void LCD_Cmd(char);
+extern void LCD_Data(char);
+extern void LCD_Init(void);
+extern void LCD_Set_Cursor(int, int);
+extern void LCD_String(char *);
+
 // [추가] LCD 2개 제어를 위한 주소 지정형 함수
 extern void I2C1_Write_Byte_To(unsigned char addr, char data);
 extern void LCD_Send_To(unsigned char addr, char data, int mode);
@@ -95,7 +105,7 @@ extern void LCD_Data_To(unsigned char addr, char data);
 extern void LCD_Init_To(unsigned char addr);
 extern void LCD_Set_Cursor_To(unsigned char addr, int y, int x);
 extern void LCD_String_To(unsigned char addr, char *str);
-
+extern void LCD2_Show_State(int state, int dist);
 
 // buzzer.c
 extern void Buzzer_Init(void);
@@ -112,4 +122,3 @@ extern void Status_LED_All_Off(void);
 extern void Status_LED_Red(void);
 extern void Status_LED_Yellow(void);
 extern void Status_LED_Green(void);
-extern void LCD2_Show_State(int state, int dist);
