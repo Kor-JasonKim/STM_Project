@@ -106,7 +106,7 @@ void Main(void)
 
                 // [추가] 컨베이어 이동 시작: 노란색 LED ON!
                 Status_LED_Yellow();                
-                Motor_Set_Percent(50);
+                Motor_Set_Percent(37);
                 Move_CW();
                 current_state = STATE_FORWARD;
             }
@@ -130,7 +130,7 @@ void Main(void)
                     printf("[1/4] Manual Start. Moving Forward...\n");
                     // [추가] 컨베이어 전진 시작: 노란색 LED ON!
                     Status_LED_Yellow();
-                    Motor_Set_Percent(50);
+                    Motor_Set_Percent(37);
                     Move_CW();
                     current_state = STATE_FORWARD;
                 }
@@ -163,7 +163,7 @@ void Main(void)
                     // [추가] 역회전 복귀 시작: 초록색 LED ON!
                     Status_LED_Green();
 
-                    Motor_Set_Percent(50);
+                    Motor_Set_Percent(37);
                     Move_CCW();
 
                     Key_Wait_Key_Released();
