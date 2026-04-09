@@ -35,15 +35,38 @@ void RTC_Alarm_IRQHandler(void)
 
 
 // [디버그] 테라텀으로 제어
-extern volatile int Uart_Data_In;
 extern volatile unsigned char Uart_Data;
+
+extern volatile char uart2_buffer[64];
+extern volatile int uart2_rx_index;
+extern volatile int uart2_rx_exist;
 void USART2_IRQHandler(void)
 {
 	// 수신된 데이터는 Uart_Data에 저장
 	Uart_Data = USART2->DR & (0xff<<0);
-	// Uart_Data_In Flag Setting
-	Uart_Data_In = 1;
 
+	// 이미 존재하면 클리어
+	if (uart2_rx_exist == 1)
+    {
+        NVIC_ClearPendingIRQ(38);
+        return; 
+    }
+	
+	if (Uart_Data == '\n' || Uart_Data == ' ')  // 엔터 or 공백으로 문자열 완성
+	{
+		uart2_buffer[uart2_rx_index] = '\0';  // 문자열 종료
+		uart2_rx_index = 0;  // 인덱스 초기화
+		uart2_rx_exist = 1;   // 문자열 완성해서 있다는 플래그
+	}
+	// 문자열 만들기
+	else
+	{
+		if (uart2_rx_index < 64 - 1)
+		{
+			uart2_buffer[uart2_rx_index] = Uart_Data;
+			uart2_rx_index++;
+		}
+	}
 	// NVIC Pending Clear
 	NVIC_ClearPendingIRQ(38);
 

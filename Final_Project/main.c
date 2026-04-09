@@ -1,5 +1,6 @@
 #include "device_driver.h"
 #include <stdio.h>
+#include <string.h>
 
 #define REST 0
 
@@ -21,8 +22,11 @@ int current_state = STATE_IDLE;
 volatile int buzzer_state = 0;
 
 // [디버그] 테라텀으로 제어하기 
-volatile int Uart_Data_In = 0; // flag, 
 volatile unsigned char Uart_Data = 0;
+volatile char uart2_buffer[64];
+volatile int uart2_rx_index = 0;
+volatile int uart2_rx_exist = 0;
+
 //
 
 static void Sys_Init(void)
@@ -204,18 +208,16 @@ void Main(void)
         Delay_ms(100);
 
 
-        char debug_command = Uart_Data;
 
-        if (Uart_Data_In) 
+        if (uart2_rx_exist) 
         {
-            int h = 0;
-            int m = 0;
-            int s = 0;
             
             // 1. 시간 동기화 (T)
-            if (debug_command == 'T' || debug_command == 't') 
+            if (strcmp((const char *)uart2_buffer, "T") == 0  || strcmp((const char *)uart2_buffer, "t") == 0) 
             {
-
+                int h = 0;
+                int m = 0;
+                int s = 0;
 
                 Set_Current_Time(h, m, s);
                 printf("\r\n[SYNC] Current Time Synced -> %02d:%02d:%02d\r\n", h, m, s);
@@ -224,7 +226,7 @@ void Main(void)
             }
 
             // 2. 알람 설정 (A)
-            else if (debug_command == 'A' || debug_command == 'a') 
+            else if (strcmp((const char *)uart2_buffer, "A") == 0  || strcmp((const char *)uart2_buffer, "a") == 0) 
             {
                 int h = 0;
                 int m = 0;
@@ -246,23 +248,29 @@ void Main(void)
             }
 
             //스테퍼모터 설정
-            else if( debug_command == 's')
+            else if(strcmp((const char *)uart2_buffer, "s") == 0)
             {
-                printf("\nstepper start");
+                printf("\r\nstepper start\r\n");
                 int temp = 0;
                 for (int k = 0; k < 1144; k++)
                 {
                     Stepper2_Step(temp);
                     temp++;
                     TIM2_Delay(5); 
-                    printf("%d\n", temp);
                 }
                 
                 
+                
+            }
+
+            // 알약 집어 넣기 임시
+            else if(strcmp((const char *)uart2_buffer, "store") == 0)
+            {
+                printf("\nstore\n");
             }
             
-
-            Uart_Data_In = 0;
+            uart2_buffer[0] = '\0'; 
+            uart2_rx_exist = 0;
         }
 
 
