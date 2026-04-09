@@ -15,8 +15,8 @@ void Motor_Init(void)
     Macro_Clear_Bit(GPIOA->OTYPER, 0);
     Macro_Clear_Bit(GPIOA->OTYPER, 1);
     
-    TIM5->PSC = 11;      // 96MHz 기준 약 1kHz 주파수 생성
-    TIM5->ARR = 7999;     
+    TIM5->PSC = 95;      
+    TIM5->ARR = 4999;     
     
     // TIM5 CH1, CH2 PWM 모드 설정
     TIM5->CCMR1 = (0x6 << 4) | (1 << 3) | (0x6 << 12) | (1 << 11);
