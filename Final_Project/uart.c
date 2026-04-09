@@ -150,6 +150,22 @@ void Uart2_Printf(char *fmt,...)
   va_end(ap);
 }
 
+// [디버그] 테라텀으로 제어하기
+void Uart2_RX_Interrupt_Enable(void)
+{
+
+  // USART2 RX Interrupt Enable
+  //USART2->CR1 |= (0x1<<7); // TXEIE:1 tx버터 empty 인터럽트 보낼꼐 없어서 작동안함
+  USART2->CR1 |= (0x1<<5); // RXNEIE:1 RX수신 인터럽트
+  
+  // NIVC Pending Clear
+  NVIC_ClearPendingIRQ(38);
+  // NVIC Interrupt Enable
+  NVIC_EnableIRQ(38);
+  
+
+}
+
 char rx_buffer[20];
 int rx_index = 0;
 

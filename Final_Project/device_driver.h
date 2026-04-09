@@ -19,7 +19,7 @@ extern void Uart2_Printf(char *fmt,...);
 extern void Process_UART_Input(void);
 extern char Uart2_Get_Pressed(void);
 
-
+extern void Uart2_RX_Interrupt_Enable(void);
 // SysTick.c
 
 extern void SysTick_Run(unsigned int msec);

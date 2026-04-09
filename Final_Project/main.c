@@ -20,6 +20,11 @@ int current_state = STATE_IDLE;
 // 부저 상태 디버그용
 volatile int buzzer_state = 0;
 
+// [디버그] 테라텀으로 제어하기 
+volatile int Uart_Data_In = 0; // flag, 
+volatile unsigned char Uart_Data = 0;
+//
+
 static void Sys_Init(void)
 {
     SCB->CPACR |= (0x3 << 10*2) | (0x3 << 11*2);
@@ -38,6 +43,8 @@ static void Sys_Init(void)
 
     // 패시브 부저용: TIM4
     Buzzer_Init();
+
+    Uart2_RX_Interrupt_Enable();
 }
 
  
@@ -195,5 +202,70 @@ void Main(void)
 
         LCD2_Show_State(current_state, dist); // [수정] 상태값을 인자로 넘겨서 LCD2 표시
         Delay_ms(100);
+
+
+        char debug_command = Uart_Data;
+
+        if (Uart_Data_In) 
+        {
+            int h = 0;
+            int m = 0;
+            int s = 0;
+            
+            // 1. 시간 동기화 (T)
+            if (debug_command == 'T' || debug_command == 't') 
+            {
+
+
+                Set_Current_Time(h, m, s);
+                printf("\r\n[SYNC] Current Time Synced -> %02d:%02d:%02d\r\n", h, m, s);
+                Uart1_Printf("T:%02d:%02d:%02d\n", h, m, s); 
+                
+            }
+
+            // 2. 알람 설정 (A)
+            else if (debug_command == 'A' || debug_command == 'a') 
+            {
+                int h = 0;
+                int m = 0;
+                int s = 5;
+                
+
+            RTC->WPR = 0xCA; RTC->WPR = 0x53;
+            RTC->CR &= ~(1 << 8); 
+            while(!(RTC->ISR & (1 << 0))); 
+            
+            RTC->ALRMAR = (1 << 31) | (TO_BCD(h) << 16) | (TO_BCD(m) << 8) | TO_BCD(s);
+            
+            RTC->CR |= (1 << 8); 
+            RTC->WPR = 0xFF;     
+            
+            printf("\r\n[SET] Alarm Updated -> %02d:%02d:%02d\r\n", h, m, s);
+            Uart1_Printf("A:%02d:%02d:%02d\n", h, m, s); 
+                
+            }
+
+            //스테퍼모터 설정
+            else if( debug_command == 's')
+            {
+                printf("\nstepper start");
+                int temp = 0;
+                for (int k = 0; k < 1144; k++)
+                {
+                    Stepper2_Step(temp);
+                    temp++;
+                    TIM2_Delay(5); 
+                    printf("%d\n", temp);
+                }
+                
+                
+            }
+            
+
+            Uart_Data_In = 0;
+        }
+
+
+
     }
 }
