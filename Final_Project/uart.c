@@ -217,6 +217,10 @@ void Process_UART_Input(void)
     // }
 }
 
+
+extern volatile int auto_load_flag;
+extern char auto_load_data[8];
+
 void USART1_IRQHandler(void) 
 {
     if (USART1->SR & (1 << 5)) { 
@@ -237,7 +241,8 @@ void USART1_IRQHandler(void)
                     }
                 }
                 // 2. 알람 설정 (A)
-                else if (rx_buffer[0] == 'A' || rx_buffer[0] == 'a') {
+                else if (rx_buffer[0] == 'A' || rx_buffer[0] == 'a') 
+                {
                     if (sscanf(rx_buffer + 1, " %d:%d:%d", &h, &m, &s) == 3) {
                         RTC->WPR = 0xCA; RTC->WPR = 0x53;
                         RTC->CR &= ~(1 << 8); 
@@ -252,6 +257,25 @@ void USART1_IRQHandler(void)
                         Uart1_Printf("A:%02d:%02d:%02d\n", h, m, s); 
                     }
                 }
+                
+                // 3. 자동 약 채우기 모드
+                // 예) "L1010100\n" (월/수/금) 전송 시
+                else if (rx_buffer[0] == 'L' || rx_buffer[0] == 'l') {
+                    if (strlen(rx_buffer) >= 8) { // L + 7자리 데이터(월~일)
+                        // 7자리 요일 데이터를 복사 (예: "1010100")
+                        strncpy(auto_load_data, rx_buffer + 1, 7);
+                        auto_load_data[7] = '\0'; 
+                        
+                        // main.c 에게 모터를 돌리라고 알림 (플래그 세팅)
+                        auto_load_flag = 1; 
+                        
+                        printf("\r\n[BLE] Auto-Load Command Received: %s\r\n", auto_load_data);
+                        Uart1_Printf("L:OK\n"); // 앱에 수신 완료 응답
+                    }
+                }
+
+
+
             }
             rx_index = 0; 
         } else if (rx_index < 19) {

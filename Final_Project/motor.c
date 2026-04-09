@@ -146,7 +146,7 @@ void Stepper2_One_Day(void)
 {
     static int current_step = 0; 
 
-    for(int i = 0; i < 2360; i++) // 1일 돌기 처음 돌때 스탭이 무시되서 조금 더 스탭 높힘
+    for(int i = 0; i < 2290; i++) // 1일 돌기 처음 돌때 스탭이 무시되서 조금 더 스탭 높힘
     {
         Stepper_Step(current_step); 
         current_step++;

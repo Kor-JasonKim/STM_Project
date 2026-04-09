@@ -26,8 +26,11 @@ volatile unsigned char Uart_Data = 0;
 volatile char uart2_buffer[64];
 volatile int uart2_rx_index = 0;
 volatile int uart2_rx_exist = 0;
-
 //
+
+// 자동 채우기용 전역 변수
+volatile int auto_load_flag = 0;
+char auto_load_data[8] = "0000000"; 
 
 static void Sys_Init(void)
 {
@@ -51,7 +54,44 @@ static void Sys_Init(void)
     Uart2_RX_Interrupt_Enable();
 }
 
- 
+ // 7일 치 약통 자동 분배 함수
+void Auto_Load_Sequence(const char* week_data) {
+    printf("\r\n[LOADING] Start Auto-Loading Sequence for 7 days...\r\n");
+    
+    // 상태 표시 LCD 업데이트
+    LCD_Set_Cursor_To(LCD2_ADDR, 0, 0);
+    LCD_String_To(LCD2_ADDR, "State: LOADING ");
+
+    // 7칸(월~일)을 순서대로 돌면서 확인
+    for(int i = 0; i < 7; i++) {
+        char lcd_buf[20];
+        
+        // 현재 칸이 채우는 칸인지 건너뛰는 칸인지 화면에 표시
+        sprintf(lcd_buf, "Slot %d: %s      ", i+1, (week_data[i] == '1') ? "LOADING" : "SKIP");
+        LCD_Set_Cursor_To(LCD2_ADDR, 1, 0);
+        LCD_String_To(LCD2_ADDR, lcd_buf);
+        printf("[LOADING] Slot %d -> %s\r\n", i+1, (week_data[i] == '1') ? "LOADING" : "SKIP");
+
+        // 앱에서 '1'로 선택한 요일이면 약 공급
+        if(week_data[i] == '1') {
+            Status_LED_Yellow(); // 채울 때 노란색 불빛 켜기
+            Supply_Pill();       // 두 번째 스텝 모터(호퍼) 작동
+            TIM2_Delay(500);     // 캡슐이 안정적으로 떨어지도록 0.5초 대기
+        }
+                    
+        // 다음 요일 칸으로 메인 약통 회전
+        Status_LED_All_Off();
+        Stepper2_One_Day();
+        TIM2_Delay(500); 
+    }
+    
+    printf("[LOADING] Sequence Complete!\r\n");
+    LCD_Set_Cursor_To(LCD2_ADDR, 0, 0);
+    LCD_String_To(LCD2_ADDR, "State: LOAD DONE");
+    //Rotate_Next_Slot(); // 원상복귀
+}
+
+
 void Main(void)
 {
     Sys_Init();
@@ -70,8 +110,15 @@ void Main(void)
 
     while(1)
     {
-        // 1. 스마트폰(UART1)에서 날아오는 명령 처리
+        // 0. 스마트폰(UART1)에서 날아오는 명령 처리
         Process_UART_Input();
+
+        // 1. 알약 자동 채우기
+        if (auto_load_flag == 1) {
+            Auto_Load_Sequence(auto_load_data); // 자동 채우기 시퀀스 실행
+            auto_load_flag = 0;                 // 플래그 초기화
+            current_state = STATE_IDLE;         // 완료 후 대기 상태로 복귀
+        }
 
         // 2. 실시간 시계 출력 로직
         unsigned int tr = RTC->TR;
@@ -114,7 +161,7 @@ void Main(void)
             for(volatile int i=0;i<0x100000;i++);
             Rotate_Next_Slot();
             for(volatile int i=0;i<0x100000;i++);
-            Supply_Pill();
+            
             pill_alarm_flag = 0;
             printf("\r\n");
 
@@ -127,6 +174,8 @@ void Main(void)
                 Move_CW();
                 current_state = STATE_FORWARD;
             }
+
+            Supply_Pill();
         }
 
         // 4. 컨베이어 벨트 상태 머신 및 거리 측정
@@ -209,6 +258,9 @@ void Main(void)
 
 
 
+        //================================
+        // uart 로 디버그
+        //==================================
         if (uart2_rx_exist) 
         {
             
@@ -303,6 +355,21 @@ void Main(void)
             {
                 Servo_Open_Close();
             }
+
+            else if (uart2_buffer[0] == 'L' || uart2_buffer[0] == 'l') {
+                if (strlen((const char * restrict)uart2_buffer) >= 8) { // L + 7자리 데이터(월~일)
+                        printf("uart2_buffer 받음\n");
+                        // 7자리 요일 데이터를 복사 (예: "1010100")
+                        strncpy(auto_load_data, (const char *)(uart2_buffer + 1), 7); // L 제외 7자리
+                        auto_load_data[7] = '\0'; 
+                        
+                        // main.c 에게 모터를 돌리라고 알림 (플래그 세팅)
+                        auto_load_flag = 1; 
+                        
+                        printf("\r\n[BLE] Auto-Load Command Received: %s\r\n", auto_load_data);
+
+                    }
+                }
             
             uart2_buffer[0] = '\0'; 
             uart2_rx_exist = 0;
