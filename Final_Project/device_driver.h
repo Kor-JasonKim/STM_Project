@@ -74,7 +74,7 @@ extern unsigned int Motor_Get_Percent(void);
 extern int Motor_Get_Dir(void);
 extern void Stepper2_Step(int);
 extern void Supply_Pill(void);
-
+extern void Stepper2_One_Day(void);
 // adc.c
 extern void ADC1_IN6_Init(void);
 extern void ADC1_Start(void);

@@ -267,6 +267,41 @@ void Main(void)
             else if(strcmp((const char *)uart2_buffer, "store") == 0)
             {
                 printf("\nstore\n");
+                for (int i = 0; i < 7; i++)
+                {
+                    Stepper2_One_Day();
+                    Supply_Pill();
+
+                    TIM2_Delay(5);
+
+                }
+                Rotate_Next_Slot();
+                
+                
+            }
+
+            // 스텝모터1 살짝 움직이기
+            else if (strcmp((const char *)uart2_buffer, "step") == 0)
+            {
+                    static int current_step = 0; 
+
+                    for(int i = 0; i < 300; i++) {
+                        Stepper_Step(current_step);
+                        current_step++;
+
+                        // 한 스텝마다 2ms 대기
+                        TIM2_Delay(5); 
+                    }
+                    
+                    // 회전 완료 후 대기 상태일 때 모터 발열 방지 (전류 차단)
+                    GPIOC->ODR &= ~(0xF << 0); 
+            }
+            
+
+            // 서보모터 움직이기
+            else if (strcmp((const char *)uart2_buffer, "servo") == 0)
+            {
+                Servo_Open_Close();
             }
             
             uart2_buffer[0] = '\0'; 
