@@ -74,7 +74,7 @@ void Auto_Load_Sequence(const char* week_data) {
 
         // 앱에서 '1'로 선택한 요일이면 약 공급
         if(week_data[i] == '1') {
-            Status_LED_Yellow(); // 채울 때 노란색 불빛 켜기
+            Status_LED_Red(); // 채울 때 노란색 불빛 켜기
             Supply_Pill();       // 두 번째 스텝 모터(호퍼) 작동
             TIM2_Delay(500);     // 캡슐이 안정적으로 떨어지도록 0.5초 대기
         }
@@ -159,8 +159,8 @@ void Main(void)
             Rotate_Next_Slot();
             Servo_Open_Close();
             for(volatile int i=0;i<0x100000;i++);
-            Rotate_Next_Slot();
-            for(volatile int i=0;i<0x100000;i++);
+
+            
             
             pill_alarm_flag = 0;
             printf("\r\n");
@@ -169,13 +169,12 @@ void Main(void)
                 printf("[1/4] Pill dropped. Conveyor Auto-Start...\r\n");
 
                 // [추가] 컨베이어 이동 시작: 노란색 LED ON!
-                Status_LED_Yellow();                
+                Status_LED_Red();                
                 Motor_Set_Percent(50);
                 Move_CW();
                 current_state = STATE_FORWARD;
             }
 
-            Supply_Pill();
         }
 
         // 4. 컨베이어 벨트 상태 머신 및 거리 측정
@@ -189,13 +188,13 @@ void Main(void)
                 if (key == 'f' || key == 'F') {
                     printf("\n[ACTION] Manual pill drop...\n");
                     // [추가] 수동 약 배출: 빨간색 LED ON!
-                    Status_LED_Red();
+                    Status_LED_Green();
                     Rotate_Next_Slot();
                     Servo_Open_Close();
 
                     printf("[1/4] Manual Start. Moving Forward...\n");
                     // [추가] 컨베이어 전진 시작: 노란색 LED ON!
-                    Status_LED_Yellow();
+                    Status_LED_Green();
                     Motor_Set_Percent(50);
                     Move_CW();
                     current_state = STATE_FORWARD;
@@ -227,7 +226,7 @@ void Main(void)
 
                     printf("[3/4] Button pressed. Buzzer OFF. Reversing...\r\n");
                     // [추가] 역회전 복귀 시작: 초록색 LED ON!
-                    Status_LED_Green();
+                    Status_LED_Red();
 
                     Motor_Set_Percent(50);
                     Move_CCW();
@@ -249,6 +248,10 @@ void Main(void)
 
                     printf("\r\n[4/4] Reached 15cm. Sequence Finished.\r\n");
                     current_state = STATE_FINISHED;
+
+                    Rotate_Next_Slot();
+                    for(volatile int i=0;i<0x100000;i++);
+                    Supply_Pill();
                 }
                 break;
         }
@@ -282,7 +285,7 @@ void Main(void)
             {
                 int h = 0;
                 int m = 0;
-                int s = 5;
+                int s = 3;
                 
 
             RTC->WPR = 0xCA; RTC->WPR = 0x53;
