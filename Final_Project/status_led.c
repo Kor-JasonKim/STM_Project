@@ -39,7 +39,7 @@ void Status_LED_Red(void)
 }
 
 
-// 초록색 4개 켜기 (PA7, PA8)
+// 초록색 ㄴ개 켜기 (PA7, PA8)
 void Status_LED_Green(void)
 {
     Status_LED_All_Off();
