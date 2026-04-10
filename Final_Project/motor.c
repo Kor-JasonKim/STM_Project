@@ -15,7 +15,7 @@ void Motor_Init(void)
     Macro_Clear_Bit(GPIOA->OTYPER, 0);
     Macro_Clear_Bit(GPIOA->OTYPER, 1);
     
-    TIM5->PSC = 11;      
+    TIM5->PSC = 11;
     TIM5->ARR = 79999;     
     
     // TIM5 CH1, CH2 PWM 모드 설정
@@ -70,13 +70,13 @@ void Servo_Open_Close(void)
     // 1. 90도로 이동 (보통 1.5ms 펄스 = CCR값 1500)
     // 서보 모델마다 차이가 있을 수 있으니 1500~2000 사이에서 조절하세요.
     TIM3->CCR1 = 1900; 
-    TIM2_Delay(20);
+    TIM2_Delay(200);
     TIM3->CCR1 = 1800; 
-    TIM2_Delay(20);
+    TIM2_Delay(200);
     TIM3->CCR1 = 1700; 
-    TIM2_Delay(20);
+    TIM2_Delay(200);
     TIM3->CCR1 = 1600; 
-    TIM2_Delay(20);
+    TIM2_Delay(200);
     TIM3->CCR1 = 1400; 
     printf("[SERVO] Lid Opening (90 deg)...\r\n");
 
