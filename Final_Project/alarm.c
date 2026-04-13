@@ -4,51 +4,45 @@
 
 void RTC_Init_And_Alarm_Set(int hour, int min, int sec)
 {
-    // 1. 전원(PWR) 제어 클럭 활성화
+    // 전원(PWR) 제어 클럭 활성화
     Macro_Set_Bit(RCC->APB1ENR, 28);
     
-    // 2. 백업 도메인(RTC 레지스터 등) 쓰기 접근 허용 (DBP 비트 세팅)
+    // RTC 레지스터 쓰기 접근 허용, DBP 비트 세팅
     PWR->CR |= (1 << 8);
-    
-    // ---------------------------------------------------------
-    // [핵심 해결책] 3. 백업 도메인 완전 초기화 (BDRST)
-    // 이전에 LSI를 썼던 기억을 강제로 지워야 LSE로 갈아탈 수 있습니다!
-    // ---------------------------------------------------------
+
     RCC->BDCR |= (1 << 16);  // 리셋 스위치 ON
-    RCC->BDCR &= ~(1 << 16); // 리셋 스위치 OFF (새출발 준비 완료)
+    RCC->BDCR &= ~(1 << 16); // 리셋 스위치 OFF
     
-    // 4. 외부 정밀 클럭(LSE) 켜기 (이때 PC14, PC15 핀을 자동 점유합니다)
+    // 외부 정밀 클럭(LSE) 켜기 (PC14, PC15 핀 자동 점유)
     RCC->BDCR |= (1 << 0);   // LSEON
     
-    // 5. LSE가 안정적으로 뛸 때까지 대기 (LSERDY)
+    // LSE가 안정적으로 뛸 때까지 대기 (LSERDY)
     while(!(RCC->BDCR & (1 << 1))); 
     
-    // 6. RTC의 심장으로 LSE를 선택 (RTCSEL = 01)
+    // RTC에서 LSE를 선택 (RTCSEL = 01)
     RCC->BDCR |= (0x1 << 8); 
     
-    // 7. RTC 시계 켜기 (RTCEN)
+    // RTC 시계 켜기 (RTCEN)
     Macro_Set_Bit(RCC->BDCR, 15);
     
-    // 8. 레지스터 쓰기 잠금 해제
+    // 레지스터 쓰기 잠금 해제
     RTC->WPR = 0xCA;
     RTC->WPR = 0x53;
     
-    // 9. 초기화 모드 진입 (INIT = 1)
+    // 초기화 모드 진입 (INIT = 1)
     Macro_Set_Bit(RTC->ISR, 7);      
     while(!Macro_Check_Bit_Set(RTC->ISR, 6)); // INITF 대기
     
-    // 10. [LSE 전용 박자 설정] 32,768Hz를 1초로 만들기 (128 * 256)
+    // 32,768Hz를 1초로 (128 * 256)
     RTC->PRER = (127 << 16) | 255;   
 
-    // 11. 현재 시간 설정 (처음 켰을 때 00:00:00)
+    // 현재 시간 설정 (처음 켰을 때 00:00:00)
     RTC->TR = 0; 
 
-    // 12. 초기화 모드 종료
+    // 초기화 모드 종료
     Macro_Clear_Bit(RTC->ISR, 7);    
 
-    // ---------------------------------------------------------
-    // 알람 A 설정 (전달받은 hour, min, sec 적용) - 기존과 동일
-    // ---------------------------------------------------------
+    // 알람 A 설정
     Macro_Clear_Bit(RTC->CR, 8);     // ALRAE Disable
     while(!Macro_Check_Bit_Set(RTC->ISR, 0)); // ALRAWF 대기
 
@@ -66,7 +60,7 @@ void RTC_Init_And_Alarm_Set(int hour, int min, int sec)
     NVIC->ISER[1] |= (1 << (41 - 32)); 
 }
 
-// 외부에서 받은 문자열을 분석해 알람을 설정하는 함수
+// 외부에서 받은 문자열을 분석해 알람 설정 함수
 void Set_Alarm_From_String(char *str) {
     int h, m, s;
     
@@ -84,7 +78,7 @@ void Set_Alarm_From_String(char *str) {
         // 매일 해당 시간에 울리도록 Mask(1<<31, 23, 15)는 끄고 시간값만 넣음
         RTC->ALRMAR = (TO_BCD(h) << 16) | (TO_BCD(m) << 8) | TO_BCD(s);
         
-        // 날짜 마스크(1<<31)를 켜면 '매일' 이 시간에 울립니다.
+        // 날짜 마스크(1<<31)를 켜면 '매일' 이 시간에 울림
         RTC->ALRMAR |= (1 << 31); 
 
         // 3. 알람 다시 활성화

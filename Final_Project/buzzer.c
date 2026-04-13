@@ -11,7 +11,7 @@ void Buzzer_Init(void)
     Macro_Write_Block(GPIOB->MODER, 0x3, 0x2, 12);  // PB6 => AF 모드
     Macro_Write_Block(GPIOB->AFR[0], 0xF, 0x2, 24); // PB6 => AF2 (TIM4) 연결
 
-    // 3. TIM4 기본 설정 (1MHz 카운터 만들기)
+    // 3. TIM4 기본 설정 (1MHz 카운터)
     TIM4->PSC = 84 - 1;   // 84MHz 기준 1us 마다 카운트
     TIM4->ARR = 1000 - 1; // 기본 주파수
     TIM4->CCR1 = 0;       // 처음엔 소리 끄기 (Duty 0%)
@@ -29,7 +29,7 @@ void Buzzer_On(void)
 {
     // 2000Hz 주파수 생성 (1,000,000 / 2000 = 500)
     TIM4->ARR = 500 - 1;
-    TIM4->CCR1 = 250; // 50% 듀티비 (가장 맑은 소리)
+    TIM4->CCR1 = 250; // 50% 듀티비
 }
 
 void Buzzer_Off(void)

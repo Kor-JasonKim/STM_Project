@@ -30,8 +30,7 @@ void SysTick_Stop(void)
 
 void Delay_ms(unsigned int msec)
 {
-    // 한 번에 처리 가능한 최대 시간이 약 1.3초이므로, 
-    // 500ms씩 나누어서 반복 실행합니다.
+    // 한 번에 처리 가능한 최대 시간이 약 1.3초 500ms씩 나누어서 반복 실행.
     while(msec > 500)
     {
         SysTick_Run(500);

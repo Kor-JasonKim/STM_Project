@@ -24,7 +24,7 @@ extern volatile int pill_alarm_flag;
 void RTC_Alarm_IRQHandler(void)
 {
 	// 알람 인터럽트 플래그가 세팅되었는지 확인
-    if (EXTI->PR & (1 << 17)) // RTC Alarm은 보통 EXTI 라인 17에 연결됨
+    if (EXTI->PR & (1 << 17)) // RTC Alarm은 보통 EXTI 라인 17에 연결
     {
         pill_alarm_flag = 1;  // 메인 루프에 알림
         EXTI->PR |= (1 << 17); // EXTI 플래그 초기화

@@ -143,17 +143,14 @@ void TIM3_Out_Init(void)
 
 void TIM3_Out_Freq_Generation(unsigned short freq)
 {
-	// 1. 쉼표(REST) 처리를 아예 함수 맨 앞단에서 해버리기
     if (freq == REST) {
-        TIM3->CR1 = 0; // 타이머 카운터 정지 (소리 끔)
-        return; // 아래 수식 계산 안 하고 여기서 함수 바로 끝내기!
+        TIM3->CR1 = 0;
+        return;
     }
 
 	// Timer 주파수가 TIM3_FREQ가 되도록 PSC 설정
 	TIM3->PSC = 11;									//96MHz / 8MHz = 12 - 1 = 11
-	// 요청한 주파수가 되도록 ARR 설정
 	TIM3->ARR = (8000000 / freq) - 1;
-	// Duty Rate 50%가 되도록 CCR3 설정
 	TIM3->CCR3 = TIM3->ARR / 2;				//Duty Rate가 50%가 되려면 ARR / 2
 	// Manual Update(UG 발생)
 	Macro_Set_Bit(TIM3->SR, 0);
@@ -171,27 +168,27 @@ void TIM3_Out_Stop(void)
 
 void TIM2_Init(void)
 {
-    // 1. TIM2 클럭 활성화
+    // TIM2 클럭 활성화
     Macro_Set_Bit(RCC->APB1ENR, 0);
 
-    // 2. 주파수 설정 (5kHz 세팅)
+    // 주파수 설정 (5kHz)
     TIM2->PSC = 96 - 1;        // 클럭을 1MHz로 분주
     TIM2->ARR = 2000 - 1;       // 200번 카운트 = 5kHz 
 
-    // 3. PWM 모드 설정 (CH1, CH2)
+    // PWM 모드 설정 (CH1, CH2)
     Macro_Write_Block(TIM2->CCMR1, 0x7, 6, 4);  
     Macro_Write_Block(TIM2->CCMR1, 0x7, 6, 12); 
     Macro_Set_Bit(TIM2->CCMR1, 3);  
     Macro_Set_Bit(TIM2->CCMR1, 11); 
 
-    // 4. 출력 활성화
+    // 출력 활성화
     Macro_Set_Bit(TIM2->CCER, 0); 
     Macro_Set_Bit(TIM2->CCER, 4); 
 
-    // 5. 초기 듀티비 0% (정지)
+    // 초기 듀티 0% (정지)
     TIM2->CCR1 = 0;
     TIM2->CCR2 = 0;
 
-    // 6. 타이머 시작
+    // 타이머 시작
     Macro_Set_Bit(TIM2->CR1, 0);
 }

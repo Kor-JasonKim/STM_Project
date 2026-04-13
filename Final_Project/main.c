@@ -4,7 +4,7 @@
 
 #define REST 0
 
-// [추가] LCD 주소 정의
+// LCD 어드레스
 #define LCD1_ADDR 0x4E
 #define LCD2_ADDR 0x4C
 
@@ -18,7 +18,8 @@ volatile int system_mode = 0;
 volatile int pill_alarm_flag = 0;
 int current_state = STATE_IDLE;
 
-// 부저 상태 디버그용
+
+// [디버그] 부저 상태
 volatile int buzzer_state = 0;
 
 // [디버그] 테라텀으로 제어하기 
@@ -26,9 +27,9 @@ volatile unsigned char Uart_Data = 0;
 volatile char uart2_buffer[64];
 volatile int uart2_rx_index = 0;
 volatile int uart2_rx_exist = 0;
-//
 
-// 자동 채우기용 전역 변수
+
+// 자동 채우기 기능용 전역 변수
 volatile int auto_load_flag = 0;
 char auto_load_data[8] = "0000000"; 
 
@@ -41,10 +42,10 @@ static void Sys_Init(void)
     setvbuf(stdout, NULL, _IONBF, 0);
 
     LED_Init();
-    Status_LED_Init(); // [추가] 외부 상태 표시 LED 6개 초기화
+    Status_LED_Init(); // 외부 상태 표시 LED 6개 초기화
     Motor_Init();
-    LCD_Init();               // [유지] 기존 LCD(0x4E) 초기화
-    LCD_Init_To(LCD2_ADDR);   // [추가] 두 번째 LCD(0x4C) 초기화
+    LCD_Init();               // 메인 LCD(0x4E) 초기화
+    LCD_Init_To(LCD2_ADDR);   // 두번째 LCD(0x4C) 초기화
     Ultrasonic_Init();
     Key_Poll_Init();
 
@@ -54,8 +55,9 @@ static void Sys_Init(void)
     Uart2_RX_Interrupt_Enable();
 }
 
- // 7일 치 약통 자동 분배 함수
-void Auto_Load_Sequence(const char* week_data) {
+// 7일 치 약통 자동 분배 함수
+void Auto_Load_Sequence(const char* week_data) 
+{
     printf("\r\n[LOADING] Start Auto-Loading Sequence for 7 days...\r\n");
     
     // 상태 표시 LCD 업데이트
@@ -88,7 +90,7 @@ void Auto_Load_Sequence(const char* week_data) {
     printf("[LOADING] Sequence Complete!\r\n");
     LCD_Set_Cursor_To(LCD2_ADDR, 0, 0);
     LCD_String_To(LCD2_ADDR, "State: LOAD DONE");
-    //Rotate_Next_Slot(); // 원상복귀
+
 }
 
 
@@ -153,7 +155,7 @@ void Main(void)
         // 3. 알람 발생 시 동작
         if (pill_alarm_flag == 1) {
             printf("\r\n\r\n[ACTION] It's pill time! Rotating...\r\n");
-            // [추가] 약이 배출될 때: 빨간색 LED ON
+            // 약이 배출될 때: 빨간색 LED ON
             Status_LED_Red();
 
             Rotate_Next_Slot();
@@ -168,7 +170,7 @@ void Main(void)
             if (current_state == STATE_IDLE || current_state == STATE_FINISHED) {
                 printf("[1/4] Pill dropped. Conveyor Auto-Start...\r\n");
 
-                // [추가] 컨베이어 이동 시작: 노란색 LED ON!
+                // 컨베이어 이동 시작: 노란색 LED ON!
                 Status_LED_Red();                
                 Motor_Set_Percent(50);
                 Move_CW();
@@ -187,13 +189,13 @@ void Main(void)
                 key = Uart2_Get_Pressed();
                 if (key == 'f' || key == 'F') {
                     printf("\n[ACTION] Manual pill drop...\n");
-                    // [추가] 수동 약 배출: 빨간색 LED ON!
+                    // 수동 약 배출: 빨간색 LED ON
                     Status_LED_Green();
                     Rotate_Next_Slot();
                     Servo_Open_Close();
 
                     printf("[1/4] Manual Start. Moving Forward...\n");
-                    // [추가] 컨베이어 전진 시작: 노란색 LED ON!
+                    // 컨베이어 전진 시작: 노란색 LED ON
                     Status_LED_Green();
                     Motor_Set_Percent(50);
                     Move_CW();
@@ -202,14 +204,14 @@ void Main(void)
                 break;
 
             case STATE_FORWARD:
-                // 필요하면 <=1 을 <=3 으로 완화해서 테스트하세요
+                // 필요하면 <=1 을 <=3 으로 완화해서 테스트
                 if (dist > 0 && dist <= 1) {
                     Stop();
 
                     printf("\r\n[DEBUG] dist = %d -> Stop()\r\n", dist);
                     Buzzer_On();
 
-                    // [추가] 도착해서 멈추면 일단 LED off
+                    // 도착해서 멈추면 일단 LED off
                     Status_LED_All_Off();
 
                     printf("[2/4] 1cm detected. Motor stop, passive buzzer ON.\r\n");
@@ -225,7 +227,7 @@ void Main(void)
                     Buzzer_Off();
 
                     printf("[3/4] Button pressed. Buzzer OFF. Reversing...\r\n");
-                    // [추가] 역회전 복귀 시작: 초록색 LED ON!
+                    // 역회전 복귀 시작: 초록색 LED ON
                     Status_LED_Red();
 
                     Motor_Set_Percent(50);
@@ -242,7 +244,7 @@ void Main(void)
                     Stop();
                     Buzzer_Off();
 
-                    // [추가] 복귀 완료 후 LED 모두 끄기
+                    // 복귀 완료 후 LED 모두 끄기
                     Status_LED_All_Off();
 
 
@@ -302,7 +304,7 @@ void Main(void)
                 
             }
 
-            //스테퍼모터 설정
+            //스테퍼모터 설정 (s)
             else if(strcmp((const char *)uart2_buffer, "s") == 0)
             {
                 printf("\r\nstepper start\r\n");
@@ -318,7 +320,7 @@ void Main(void)
                 
             }
 
-            // 알약 집어 넣기 임시
+            // 알약 집어 넣기 임시 (store)
             else if(strcmp((const char *)uart2_buffer, "store") == 0)
             {
                 printf("\nstore\n");
@@ -335,7 +337,7 @@ void Main(void)
                 
             }
 
-            // 스텝모터1 살짝 움직이기
+            // 스텝모터1 살짝 움직이기 (step)
             else if (strcmp((const char *)uart2_buffer, "step") == 0)
             {
                     static int current_step = 0; 
@@ -353,7 +355,7 @@ void Main(void)
             }
             
 
-            // 서보모터 움직이기
+            // 서보모터 움직이기 (servo)
             else if (strcmp((const char *)uart2_buffer, "servo") == 0)
             {
                 Servo_Open_Close();
@@ -362,13 +364,10 @@ void Main(void)
             else if (uart2_buffer[0] == 'L' || uart2_buffer[0] == 'l') {
                 if (strlen((const char * restrict)uart2_buffer) >= 8) { // L + 7자리 데이터(월~일)
                         printf("uart2_buffer 받음\n");
-                        // 7자리 요일 데이터를 복사 (예: "1010100")
+                        // 7자리 요일 데이터를 복사 (예: "1010100" 월수금)
                         strncpy(auto_load_data, (const char *)(uart2_buffer + 1), 7); // L 제외 7자리
                         auto_load_data[7] = '\0'; 
-                        
-                        // main.c 에게 모터를 돌리라고 알림 (플래그 세팅)
                         auto_load_flag = 1; 
-                        
                         printf("\r\n[BLE] Auto-Load Command Received: %s\r\n", auto_load_data);
 
                     }
